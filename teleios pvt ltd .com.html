@@ -1,0 +1,1357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TÉLEIOS Engineering Pvt Ltd | National Geofence & Command Center</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <!-- EmailJS SDK Initialization -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script type="text/javascript">
+        (function() {
+            emailjs.init("2siiGodZ29BnYXyZ4");
+        })();
+    </script>
+
+    <style>
+        :root {
+            --bg-base: #080b10;
+            --panel-bg: rgba(15, 23, 30, 0.95);
+            --panel-solid: #0f172a;
+            --border-color: rgba(255, 255, 255, 0.12);
+            
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --accent-orange: #f59e0b;
+            --accent-blue: #3b82f6;
+            --accent-purple: #8b5cf6;
+            --teleios-gold: #c5a059;
+            
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-serif: 'Cinzel', serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: var(--font-sans); }
+        html, body { background-color: var(--bg-base); color: var(--text-main); height: 100vh; width: 100vw; overflow: hidden; display: flex; flex-direction: column; }
+
+        /* Login Screen */
+        #login-screen {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: radial-gradient(circle at 75% 30%, rgba(59, 130, 246, 0.25) 0%, transparent 50%),
+                        linear-gradient(135deg, #070a0f 0%, #0f172a 50%, #030712 100%);
+            z-index: 9999; display: flex; flex-direction: column; justify-content: space-between;
+            padding: 3rem 4rem;
+        }
+        #login-screen::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background-image: linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+            background-size: 40px 40px; pointer-events: none;
+        }
+
+        .login-top-brand { display: flex; flex-direction: column; align-items: flex-start; z-index: 10; }
+        .teleios-serif-logo {
+            font-family: var(--font-serif); font-size: 2.8rem; letter-spacing: 6px;
+            color: #ffffff; text-transform: uppercase; display: flex; align-items: center; gap: 0.8rem;
+        }
+        .teleios-symbol-svg { width: 36px; height: 36px; fill: var(--teleios-gold); }
+        .teleios-tagline { font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 3px; color: var(--teleios-gold); text-transform: uppercase; margin-left: 3.2rem; }
+
+        .login-center-wrapper { display: flex; justify-content: center; width: 100%; z-index: 10; }
+        .login-box {
+            background: var(--panel-bg); backdrop-filter: blur(16px);
+            padding: 2.5rem 3rem; border-radius: 12px; border: 1px solid var(--border-color);
+            width: 420px; text-align: center; box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8);
+        }
+        .login-box h3 { font-family: var(--font-mono); font-size: 1rem; letter-spacing: 2px; color: var(--accent-green); margin-bottom: 0.3rem; text-transform: uppercase; }
+        .login-box p { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 2rem; }
+        
+        .input-group { margin-bottom: 1.2rem; text-align: left; }
+        .input-group label { display: block; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.4rem; color: var(--text-muted); font-family: var(--font-mono); }
+        .input-group input {
+            width: 100%; padding: 0.85rem 1rem; border-radius: 6px; border: 1px solid var(--border-color);
+            background: rgba(11, 15, 18, 0.8); color: #fff; font-size: 0.95rem;
+        }
+        .input-group input:focus { outline: none; border-color: var(--accent-green); }
+        
+        .btn-login {
+            width: 100%; padding: 0.85rem; background: var(--teleios-gold); border: none;
+            color: #000; font-weight: 700; border-radius: 6px; cursor: pointer; margin-top: 0.5rem;
+            font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1.5px;
+        }
+
+        .login-bottom-banner {
+            background: linear-gradient(90deg, #111822 0%, rgba(17, 24, 34, 0.85) 100%);
+            border: 1px solid var(--border-color); border-radius: 6px;
+            padding: 0.8rem 1.8rem; display: flex; align-items: center; gap: 1.2rem; width: fit-content; z-index: 10;
+        }
+        .footer-brand-text { font-family: var(--font-sans); font-weight: 800; font-size: 1.2rem; letter-spacing: 1px; color: #ffffff; text-transform: uppercase; }
+
+        /* Dashboard Top Header */
+        header {
+            background: var(--panel-solid); padding: 0.75rem 1.5rem; display: flex;
+            justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color);
+            z-index: 1000; height: 60px; min-height: 60px;
+        }
+        .header-left { display: flex; align-items: center; gap: 1.5rem; }
+        .dashboard-brand { display: flex; align-items: center; gap: 0.8rem; }
+        .dashboard-brand svg { width: 28px; height: 28px; fill: var(--teleios-gold); }
+        .dashboard-brand-text { font-family: var(--font-serif); font-size: 1.1rem; letter-spacing: 2px; color: #ffffff; }
+        
+        /* Navigation Tabs */
+        .nav-tabs { display: flex; gap: 0.4rem; }
+        .tab-btn {
+            background: transparent; border: 1px solid transparent; color: var(--text-muted);
+            padding: 0.4rem 0.8rem; border-radius: 6px; cursor: pointer; font-size: 0.8rem;
+            font-weight: 600; display: flex; align-items: center; gap: 0.4rem; transition: all 0.2s;
+        }
+        .tab-btn:hover { color: var(--text-main); background: rgba(255,255,255,0.03); }
+        .tab-btn.active { color: var(--accent-green); background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.3); }
+
+        .status-bar { display: flex; gap: 1rem; font-size: 0.75rem; font-family: var(--font-mono); }
+        .status-item { display: flex; align-items: center; gap: 0.4rem; color: var(--text-muted); background: rgba(255,255,255,0.03); padding: 0.3rem 0.7rem; border-radius: 20px; border: 1px solid var(--border-color); }
+        .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent-green); display: inline-block; box-shadow: 0 0 6px var(--accent-green); }
+
+        /* Main Workspace Layout */
+        main { display: flex; flex: 1; position: relative; overflow: hidden; height: calc(100vh - 60px); }
+
+        .view-panel { display: none; width: 100%; height: 100%; position: relative; }
+        .view-panel.active { display: flex; }
+
+        #map-view { position: relative; width: 100%; height: 100%; }
+        #map { width: 100%; height: 100%; background: var(--bg-base); z-index: 1; }
+
+        .map-floating-bar {
+            position: absolute; top: 15px; left: 15px; z-index: 800;
+            background: var(--panel-bg); backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color); border-radius: 8px;
+            padding: 0.75rem 1rem; display: flex; align-items: center; gap: 1rem; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .view-container { padding: 2rem; background: var(--bg-base); overflow-y: auto; flex-direction: column; width: 100%; gap: 1.5rem; }
+        .control-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 1.5rem; }
+        .control-card { background: var(--panel-solid); border: 1px solid var(--border-color); border-radius: 8px; padding: 1.5rem; }
+        .control-card h4 { font-family: var(--font-mono); font-size: 0.85rem; color: var(--accent-green); text-transform: uppercase; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; }
+
+        .report-header-bar { display: flex; justify-content: space-between; align-items: center; background: var(--panel-solid); padding: 1rem 1.5rem; border: 1px solid var(--border-color); border-radius: 8px; }
+        .logs-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; font-family: var(--font-mono); }
+        .logs-table th { text-align: left; padding: 0.8rem; background: var(--panel-solid); color: var(--text-muted); border-bottom: 1px solid var(--border-color); }
+        .logs-table td { padding: 0.8rem; border-bottom: 1px solid var(--border-color); color: var(--text-main); }
+
+        .form-row { display: flex; gap: 0.6rem; margin-bottom: 0.8rem; }
+        select, input[type="text"], textarea {
+            flex: 1; padding: 0.6rem 0.8rem; background: var(--bg-base); border: 1px solid var(--border-color);
+            color: #fff; border-radius: 6px; font-size: 0.85rem;
+        }
+        textarea { font-family: var(--font-mono); font-size: 0.75rem; height: 100px; resize: none; }
+        
+        .btn { padding: 0.6rem 1rem; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; }
+        .btn-primary { background: var(--accent-blue); color: white; }
+        .btn-success { background: var(--accent-green); color: black; font-weight: 700; }
+        .btn-warning { background: var(--accent-orange); color: black; font-weight: 700; }
+        .btn-danger { background: var(--accent-red); color: white; }
+
+        .badge { padding: 0.2rem 0.6rem; border-radius: 4px; font-size: 0.7rem; font-weight: 700; font-family: var(--font-mono); text-transform: uppercase; display: inline-block; }
+        .badge-normal { background: rgba(16, 185, 129, 0.2); color: var(--accent-green); border: 1px solid var(--accent-green); }
+
+        #modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(8px);
+            z-index: 2000; display: none; justify-content: center; align-items: center;
+        }
+        .modal-card {
+            background: var(--panel-solid); border: 1px solid var(--border-color);
+            border-radius: 10px; width: 420px; padding: 2rem; box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+        }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+        .modal-header h3 { font-family: var(--font-mono); font-size: 1rem; color: var(--accent-green); text-transform: uppercase; }
+        .close-modal { background: none; border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer; }
+
+        .asset-drawer {
+            position: absolute; top: 15px; right: 15px; width: 320px; max-height: calc(100% - 30px);
+            background: var(--panel-bg); backdrop-filter: blur(12px); border: 1px solid var(--border-color);
+            border-radius: 8px; z-index: 800; display: flex; flex-direction: column; overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .drawer-header { padding: 1rem; border-bottom: 1px solid var(--border-color); font-family: var(--font-mono); font-size: 0.8rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); display: flex; justify-content: space-between; }
+        .drawer-content { flex: 1; overflow-y: auto; padding: 0.8rem; }
+
+        .asset-card {
+            background: var(--bg-base); padding: 0.75rem; border-radius: 6px;
+            border: 1px solid var(--border-color); margin-bottom: 0.5rem;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .asset-card strong { display: block; font-size: 0.85rem; }
+        .asset-card span { font-size: 0.7rem; font-family: var(--font-mono); text-transform: uppercase; }
+
+        #email-popup {
+            position: absolute; bottom: 20px; left: 20px; width: 320px;
+            background: rgba(21, 28, 34, 0.95); backdrop-filter: blur(10px);
+            border: 1px solid var(--accent-purple); border-radius: 8px; padding: 1rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); z-index: 2000; display: none;
+        }
+        #email-popup h4 { font-size: 0.85rem; color: var(--accent-purple); margin-bottom: 0.4rem; font-family: var(--font-mono); display: flex; justify-content: space-between; }
+        #email-popup p { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.3rem; }
+
+        .leaflet-popup-content-wrapper { background: var(--panel-solid) !important; color: var(--text-main) !important; border: 1px solid var(--border-color); border-radius: 8px; font-family: var(--font-sans); }
+        .leaflet-popup-tip { background: var(--panel-solid) !important; }
+    </style>
+</head>
+<body>
+
+    <!-- Cover / Login Screen -->
+    <div id="login-screen">
+        <div class="login-top-brand">
+            <div class="teleios-serif-logo">
+                <svg class="teleios-symbol-svg" viewBox="0 0 100 100">
+                    <path d="M50 15 C35 15 35 35 50 35 C65 35 65 15 50 15 Z M15 50 C15 35 35 35 35 50 C35 65 15 65 15 50 Z M50 85 C65 85 65 65 50 65 C35 65 35 85 50 85 Z M85 50 C85 65 65 65 65 50 C65 35 85 35 85 50 Z"/>
+                </svg>
+                TÉLEIOS
+            </div>
+            <div class="teleios-tagline">MISSION CRITICAL SOLUTIONS</div>
+        </div>
+
+        <div class="login-center-wrapper">
+            <div class="login-box">
+                <h3>Tactical Mesh Gateway</h3>
+                <p>National Parks Security & Geofencing System</p>
+                <div class="input-group">
+                    <label>Operator Email / Username</label>
+                    <input type="text" id="username" value="admin@teleios.co.zw">
+                </div>
+                <div class="input-group">
+                    <label>Password</label>
+                    <input type="password" id="password" value="admina">
+                </div>
+                <button class="btn-login" onclick="handleLogin()">Authenticate Terminal</button>
+                <div id="error-msg" style="color:var(--accent-red); font-size:0.8rem; margin-top:0.8rem; display:none;">Access Denied: Invalid Credentials</div>
+            </div>
+        </div>
+
+        <div class="login-bottom-banner">
+            <svg class="teleios-symbol-svg" style="width:28px; height:28px;" viewBox="0 0 100 100">
+                <path d="M50 15 C35 15 35 35 50 35 C65 35 65 15 50 15 Z M15 50 C15 35 35 35 35 50 C35 65 15 65 15 50 Z M50 85 C65 85 65 65 50 65 C35 65 35 85 50 85 Z M85 50 C85 65 65 65 65 50 C65 35 85 35 85 50 Z"/>
+            </svg>
+            <div class="footer-brand-text">TELEIOS Engineering Pvt Ltd</div>
+        </div>
+    </div>
+
+    <!-- Check-In Modal Overlay -->
+    <div id="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>Issue & Pair Tag Asset</h3>
+                <button class="close-modal" onclick="closeCheckInModal()">✕</button>
+            </div>
+            <div class="form-row">
+                <input type="text" id="modal-visitor-name" placeholder="Visitor / Ranger Name">
+            </div>
+            <div class="form-row">
+                <select id="modal-provisioned-select">
+                    <!-- Populated dynamically -->
+                </select>
+            </div>
+            <p style="font-size:0.75rem; color:var(--text-muted); margin-bottom:1rem;">Select a provisioned device from inventory to assign to this person or vehicle.</p>
+            <button class="btn btn-success" style="width: 100%;" onclick="checkInTagFromModal()">Pair & Deploy Asset</button>
+        </div>
+    </div>
+
+    <!-- Main Dashboard -->
+    <div id="app">
+        <header>
+            <div class="header-left">
+                <div class="dashboard-brand">
+                    <svg viewBox="0 0 100 100">
+                        <path d="M50 15 C35 15 35 35 50 35 C65 35 65 15 50 15 Z M15 50 C15 35 35 35 35 50 C35 65 15 65 15 50 Z M50 85 C65 85 65 65 50 65 C35 65 35 85 50 85 Z M85 50 C85 65 65 65 65 50 C65 35 85 35 85 50 Z"/>
+                    </svg>
+                    <div class="dashboard-brand-text">TÉLEIOS ENGINEERING</div>
+                </div>
+
+                <!-- Navigation Tabs -->
+                <div class="nav-tabs">
+                    <button class="tab-btn active" onclick="switchView('map-view', this)">🗺️ Live Map</button>
+                    <button class="tab-btn" id="tab-users" onclick="switchView('users-view', this)">👥 User & Group Access</button>
+                    <button class="tab-btn" onclick="switchView('alarms-view', this)">🚨 Alarm Dashboard</button>
+                    <button class="tab-btn" onclick="switchView('provisioning-view', this)">📡 Hardware Provisioning</button>
+                    <button class="tab-btn" id="tab-geofence" onclick="switchView('control-view', this)">⚙️ Geofence & Rules</button>
+                    <button class="tab-btn" onclick="switchView('logs-view', this)">📋 Reports & Logs</button>
+                </div>
+            </div>
+
+            <div class="status-bar">
+                <div class="status-item">Role: <strong id="header-user-role" style="color:var(--teleios-gold)">ADMIN</strong></div>
+                <div class="status-item">Sector: <strong>ZIMBABWE NATIONAL</strong></div>
+                <div class="status-item"><span class="dot"></span> Starlink Mesh: <strong id="starlink-active-count">1 ONLINE</strong></div>
+            </div>
+        </header>
+
+        <main>
+            <!-- View 1: Live Map Canvas -->
+            <div id="map-view" class="view-panel active">
+                <div class="map-floating-bar">
+                    <button class="btn btn-success" id="btn-add-tag" onclick="openCheckInModal()">+ Assign Tag</button>
+                    <button class="btn btn-primary" style="background: var(--accent-purple);" onclick="simulateMyLocation()">📍 Fix Phone GPS</button>
+                </div>
+
+                <div id="map"></div>
+
+                <!-- Asset Drawer -->
+                <div class="asset-drawer">
+                    <div class="drawer-header">
+                        <span>Active Assets (<span id="active-count">0</span>)</span>
+                    </div>
+                    <div class="drawer-content" id="asset-list"></div>
+                </div>
+
+                <!-- Email Notification Popup -->
+                <div id="email-popup">
+                    <h4><span>📧 BG Email Dispatch</span> <span id="email-time">00:00</span></h4>
+                    <p><strong>To:</strong> <span id="email-popup-recipients">parks@tactical-mesh.com</span></p>
+                    <p id="email-subject"><strong>Subject:</strong> Critical Alert</p>
+                    <p id="email-body" style="font-size:0.75rem; color:#fff; background: rgba(0,0,0,0.3); padding:0.4rem; border-radius:4px; margin-top:0.3rem;">Body text...</p>
+                </div>
+            </div>
+
+            <!-- View 2: User Onboarding & Group Management -->
+            <div id="users-view" class="view-panel view-container">
+                <div class="control-grid">
+                    <div class="control-card">
+                        <h4>Onboard User / Generate Invite Link</h4>
+                        <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:1rem;">Create role-restricted invite links for team members or field operators.</p>
+                        <div class="form-row">
+                            <input type="text" id="onboard-email" placeholder="Operator Email (e.g. ranger@parks.co.zw)">
+                        </div>
+                        <div class="form-row">
+                            <select id="onboard-role">
+                                <option value="Admin">Admin (Full Control)</option>
+                                <option value="Operator">Operator (Deploy Tags & Map View)</option>
+                                <option value="Viewer">Viewer (Read-Only Map & Alarms)</option>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <select id="onboard-group">
+                                <option value="Mana Pools Rangers">Mana Pools Ranger Group</option>
+                                <option value="Zambezi Patrol Unit">Zambezi River Patrol</option>
+                                <option value="Anti-Poaching Team">Anti-Poaching Taskforce</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-primary" style="width:100%; margin-top:0.5rem;" onclick="generateInviteLinkUI()">Generate App Invite Link</button>
+
+                        <div id="invite-result-box" style="display:none; margin-top:1rem; background:rgba(0,0,0,0.4); padding:0.8rem; border-radius:6px; border:1px solid var(--border-color);">
+                            <p style="font-size:0.75rem; color:var(--teleios-gold); font-family:var(--font-mono); margin-bottom:0.4rem;">GENERATED INVITE LINK:</p>
+                            <input type="text" id="generated-invite-url" readonly style="font-size:0.75rem;">
+                        </div>
+                    </div>
+
+                    <div class="control-card">
+                        <h4>Registered Users & Active Groups</h4>
+                        <div style="margin-bottom:1rem; display:flex; justify-content:space-between; font-size:0.8rem; font-family:var(--font-mono);">
+                            <span>Total Users: <strong id="total-users-count" style="color:var(--accent-blue)">0</strong></span>
+                            <span>Active Now: <strong id="active-users-count" style="color:var(--accent-green)">0</strong></span>
+                        </div>
+                        <table class="logs-table" style="font-size:0.75rem;">
+                            <thead>
+                                <tr>
+                                    <th>User</th>
+                                    <th>Role</th>
+                                    <th>Group</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="users-table-body">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- View 3: Alarm Severity Dashboard -->
+            <div id="alarms-view" class="view-panel view-container">
+                <div class="report-header-bar">
+                    <div>
+                        <h3 style="font-family: var(--font-mono); font-size: 1rem; color: var(--accent-red);">REAL-TIME ALARM & INCIDENT DASHBOARD</h3>
+                        <p style="font-size: 0.8rem; color: var(--text-muted);">Monitored Alarms: Critical, Major, Minor, and Normal Status</p>
+                    </div>
+                </div>
+
+                <div class="control-grid">
+                    <div class="control-card" style="border-left: 4px solid var(--accent-red);">
+                        <h4 style="color:var(--accent-red);">Critical Alarms (<span id="critical-count">0</span>)</h4>
+                        <div id="critical-alarms-list" style="font-size:0.8rem;"></div>
+                    </div>
+                    <div class="control-card" style="border-left: 4px solid var(--accent-orange);">
+                        <h4 style="color:var(--accent-orange);">Major Alarms (<span id="major-count">0</span>)</h4>
+                        <div id="major-alarms-list" style="font-size:0.8rem;"></div>
+                    </div>
+                    <div class="control-card" style="border-left: 4px solid var(--accent-blue);">
+                        <h4 style="color:var(--accent-blue);">Minor Alarms (<span id="minor-count">0</span>)</h4>
+                        <div id="minor-alarms-list" style="font-size:0.8rem;"></div>
+                    </div>
+                    <div class="control-card" style="border-left: 4px solid var(--accent-green);">
+                        <h4 style="color:var(--accent-green);">Normal Status (<span id="normal-count">0</span>)</h4>
+                        <div id="normal-alarms-list" style="font-size:0.8rem;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- View 4: Hardware Tag & Starlink Provisioning -->
+            <div id="provisioning-view" class="view-panel view-container">
+                <div class="control-grid">
+                    <div class="control-card">
+                        <h4>Register Hardware Asset / Starlink Node</h4>
+                        <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">Add Milesight LoRaWAN Tags or Starlink Terminals to system inventory before gate/sector deployment.</p>
+                        
+                        <div class="form-row">
+                            <select id="prov-category" onchange="toggleProvisioningCategory(this.value)">
+                                <option value="Milesight">Milesight LoRaWAN Tag / Badge</option>
+                                <option value="Starlink">Starlink Satellite Uplink Terminal</option>
+                            </select>
+                        </div>
+
+                        <div class="form-row">
+                            <input type="text" id="prov-dev-eui" placeholder="Device Identifier (DevEUI / Starlink KIT-ID)">
+                        </div>
+                        <div class="form-row">
+                            <input type="text" id="prov-app-key" placeholder="AppKey / MAC Address">
+                        </div>
+                        <div class="form-row">
+                            <select id="prov-model">
+                                <option value="Milesight GS301 Badge">Milesight GS301 Smart Badge</option>
+                                <option value="Milesight TS201 Tracker">Milesight TS201 Vehicle Tracker</option>
+                                <option value="Milesight AT101 Tag">Milesight AT101 Asset Tag</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-success" style="width: 100%; margin-top:0.5rem;" onclick="provisionMilesightTag()">Provision Hardware Device</button>
+                    </div>
+
+                    <div class="control-card">
+                        <h4>Provisioned Hardware Inventory</h4>
+                        <table class="logs-table" style="font-size: 0.75rem;">
+                            <thead>
+                                <tr>
+                                    <th>Device ID / KIT</th>
+                                    <th>Category & Model</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="inventory-table-body">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- View 5: Geofence Control & Rule Configurator -->
+            <div id="control-view" class="view-panel view-container">
+                <div class="control-grid">
+                    <div class="control-card">
+                        <h4>Alert Email Notification Distribution List</h4>
+                        <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.8rem;">Enter email addresses (comma separated) to receive live incident alerts automatically:</p>
+                        <div class="form-row">
+                            <input type="text" id="alert-emails-input" value="hq@teleios.co.zw, security@parks.co.zw" placeholder="email1@teleios.co.zw, email2@parks.co.zw">
+                        </div>
+                        <button class="btn btn-primary" style="width:100%; margin-bottom:1rem;" onclick="saveAlertDistributionEmails()">Save Alert Email List</button>
+                    </div>
+
+                    <div class="control-card">
+                        <h4>Geofence Polygon Coordinates Editor</h4>
+                        <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.8rem;">Edit coordinates (Lat, Lng array) below to customize the active Restricted Geofence Zone:</p>
+                        <div class="form-row">
+                            <textarea id="geofence-coords-input"></textarea>
+                        </div>
+                        <button class="btn btn-primary" style="width: 100%; margin-bottom: 1rem;" onclick="updateGeofenceFromInput()">Save Geofence Parameters</button>
+                    </div>
+
+                    <div class="control-card">
+                        <h4>Configure Alarm Severity Rules</h4>
+                        <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.8rem;">Define alarm level triggered during breach conditions:</p>
+                        <div class="form-row">
+                            <label style="font-size:0.8rem; color:var(--text-muted); width:140px;">Poaching Breach:</label>
+                            <select id="rule-poaching-severity">
+                                <option value="Critical" selected>CRITICAL ALARM</option>
+                                <option value="Major">MAJOR ALARM</option>
+                                <option value="Minor">MINOR ALARM</option>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <label style="font-size:0.8rem; color:var(--text-muted); width:140px;">National Border Exit:</label>
+                            <select id="rule-boundary-severity">
+                                <option value="Major" selected>MAJOR ALARM</option>
+                                <option value="Critical">CRITICAL ALARM</option>
+                                <option value="Minor">MINOR ALARM</option>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <button class="btn btn-success" style="width:100%; margin-top:0.5rem;" onclick="saveAlarmRules()">Save Alarm Rules</button>
+                        </div>
+                    </div>
+
+                    <div class="control-card">
+                        <h4>Target Asset Movement Simulation</h4>
+                        <div class="form-row">
+                            <select id="target-asset-select">
+                                <!-- Populated dynamically -->
+                            </select>
+                        </div>
+                        <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">Select an active asset above to force movements into or out of defined geofenced zones.</p>
+                        <div class="form-row">
+                            <button class="btn btn-warning" style="width: 100%;" onclick="forceBreachRestrictedZone()">Move Selected to Poaching Zone</button>
+                        </div>
+                        <div class="form-row">
+                            <button class="btn btn-danger" style="width: 100%;" onclick="forceExitParkBoundary()">Move Selected Outside Zimbabwe Border</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- View 6: Event Audit Log View -->
+            <div id="logs-view" class="view-panel view-container">
+                <div class="report-header-bar">
+                    <div>
+                        <h3 style="font-family: var(--font-mono); font-size: 1rem; color: var(--teleios-gold);">MAINTENANCE & MESH AUDIT REPORT</h3>
+                        <p style="font-size: 0.8rem; color: var(--text-muted);">Generated for Teleios Engineering Command HQ (parks@tactical-mesh.com)</p>
+                    </div>
+                    <button class="btn btn-primary" onclick="exportMaintenanceReport()">Export Report (.TXT)</button>
+                </div>
+
+                <table class="logs-table">
+                    <thead>
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>Source</th>
+                            <th>Severity</th>
+                            <th>Event Details & Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logs-table-body">
+                        <!-- Populated dynamically -->
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        const MAIN_GATE = [-15.7280, 29.3650];
+        let map = null;
+        let restrictedPolygonLayer = null;
+
+        let currentUserRole = 'Admin';
+
+        // Real-Time Cross-Tab Synchronization
+        const meshSyncChannel = new BroadcastChannel('teleios_mesh_channel');
+
+        meshSyncChannel.onmessage = function(event) {
+            const data = event.data;
+
+            if (data.type === 'VISITOR_UPDATE') {
+                data.visitors.forEach(remoteV => {
+                    let localV = activeVisitors.find(v => v.id === remoteV.id);
+                    if (localV) {
+                        localV.lat = remoteV.lat;
+                        localV.lng = remoteV.lng;
+                        localV.status = remoteV.status;
+                        localV.inRestricted = remoteV.inRestricted;
+                        localV.insidePark = remoteV.insidePark;
+                        if (localV.marker) {
+                            localV.marker.setLatLng([localV.lat, localV.lng]);
+                            const color = localV.inRestricted ? '#ef4444' : (!localV.insidePark ? '#f59e0b' : '#10b981');
+                            localV.marker.setStyle({ color: color, fillColor: color });
+                        }
+                    } else {
+                        activeVisitors.push(remoteV);
+                        renderVisitorOnMap(remoteV);
+                    }
+                });
+                updateVisitorUI();
+            } else if (data.type === 'ALARM_TRIGGERED') {
+                addAlarmEvent(data.source, data.severity, data.text, false);
+            } else if (data.type === 'GEOFENCE_UPDATED') {
+                RESTRICTED_ZONE = data.zone;
+                if (restrictedPolygonLayer && map) {
+                    map.removeLayer(restrictedPolygonLayer);
+                    restrictedPolygonLayer = L.polygon(RESTRICTED_ZONE, { color: '#ef4444', fillColor: '#ef4444', fillOpacity: 0.25, weight: 2 }).addTo(map);
+                }
+                syncCoordsToInput();
+            } else if (data.type === 'INVENTORY_UPDATED') {
+                provisionedTags = data.inventory;
+                updateInventoryUI();
+            }
+        };
+
+        function broadcastStateUpdate() {
+            meshSyncChannel.postMessage({
+                type: 'VISITOR_UPDATE',
+                visitors: activeVisitors.map(v => ({
+                    id: v.id,
+                    type: v.type,
+                    name: v.name,
+                    lat: v.lat,
+                    lng: v.lng,
+                    status: v.status,
+                    inRestricted: v.inRestricted,
+                    insidePark: v.insidePark
+                }))
+            });
+        }
+
+        // System Storage
+        let userDatabase = JSON.parse(localStorage.getItem('teleios_users')) || [
+            { email: 'admin@teleios.co.zw', password: 'admina', role: 'Admin', group: 'Mana Pools Rangers', status: 'Active' },
+            { email: 'c.moyo@parks.co.zw', password: 'password123', role: 'Operator', group: 'Zambezi Patrol Unit', status: 'Active' },
+            { email: 't.katsande@parks.co.zw', password: 'password123', role: 'Viewer', group: 'Anti-Poaching Team', status: 'Active' }
+        ];
+
+        let pendingInvites = JSON.parse(localStorage.getItem('teleios_pending_invites')) || {};
+        let alertDistributionEmails = ["hq@teleios.co.zw", "security@parks.co.zw"];
+
+        function saveAlertDistributionEmails() {
+            const rawVal = document.getElementById('alert-emails-input').value;
+            alertDistributionEmails = rawVal.split(',').map(e => e.trim()).filter(e => e.length > 0);
+            logTelemetry('CONFIG', `Alert notification email list updated: ${alertDistributionEmails.join(', ')}`, 'normal');
+            alert(`Updated alert email dispatches. Notifications will now go to: ${alertDistributionEmails.join(', ')}`);
+        }
+
+        function saveStateToStorage() {
+            localStorage.setItem('teleios_users', JSON.stringify(userDatabase));
+            localStorage.setItem('teleios_pending_invites', JSON.stringify(pendingInvites));
+        }
+
+        // -------------------------------------------------------------
+        // 1. WEBSITE JOINING / ONBOARDING FLOW (Uses template_ocao74f)
+        // -------------------------------------------------------------
+        function onboardNewUser(email, role, group) {
+            const token = 'TOK-' + Math.random().toString(36).substring(2, 10).toUpperCase();
+            
+            pendingInvites[token] = {
+                email: email,
+                role: role,
+                group: group,
+                created: new Date()
+            };
+
+            saveStateToStorage();
+
+            let baseUrl = window.location.href.split('?')[0];
+            const inviteUrl = `${baseUrl}?action=register&token=${token}`;
+
+            sendOnboardingEmail(email, role, inviteUrl);
+            return inviteUrl;
+        }
+
+        function sendOnboardingEmail(recipientEmail, role, inviteUrl) {
+            const subject = "TÉLEIOS Engineering - Account Activation & Password Setup";
+            const body = `You have been invited to join the TÉLEIOS Tactical Mesh Platform as an [${role}]. Click the activation link below to set up your password: ${inviteUrl}`;
+
+            simulateBackgroundEmail(subject, body, recipientEmail);
+
+            const templateParams = {
+                to_email: recipientEmail,
+                user_role: role,
+                invite_link: inviteUrl,
+                message: body
+            };
+
+            emailjs.send('default_service', 'template_ocao74f', templateParams)
+                .then(function(response) {
+                    console.log('ONBOARDING EMAIL DELIVERED TO INBOX!', response.status, response.text);
+                    logTelemetry('SMTP SUCCESS', `Onboarding email delivered to ${recipientEmail}`, 'email');
+                }, function(error) {
+                    console.log('EmailJS Onboarding Error:', error);
+                });
+        }
+
+        // -------------------------------------------------------------
+        // 2. ALARM DISPATCH FLOW (Uses template_alarm_alert or fallback)
+        // -------------------------------------------------------------
+        function dispatchGeofenceAlertEmails(severity, sourceUnit, alertMsg) {
+            simulateBackgroundEmail(`🚨 INCIDENT ALERT: ${severity} - ${sourceUnit}`, alertMsg, alertDistributionEmails.join(', '));
+
+            alertDistributionEmails.forEach(targetEmail => {
+                const alarmParams = {
+                    to_email: targetEmail,
+                    alarm_severity: severity,
+                    alarm_source: sourceUnit,
+                    message: alertMsg,
+                    time: new Date().toLocaleTimeString(),
+                    terminal_url: window.location.href.split('?')[0]
+                };
+
+                emailjs.send('default_service', 'template_alarm_alert', alarmParams)
+                    .then(function(res) {
+                        console.log(`ALARM DISPATCH SUCCESS to ${targetEmail}`);
+                    }, function(err) {
+                        emailjs.send('default_service', 'template_ocao74f', {
+                            to_email: targetEmail,
+                            user_role: `INCIDENT DISPATCH [${severity}]`,
+                            invite_link: window.location.href.split('?')[0],
+                            message: `🚨 SECURITY ALARM ALERT: ${alertMsg}`
+                        });
+                    });
+            });
+        }
+
+        function checkUrlForInviteToken() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const action = urlParams.get('action');
+            const token = urlParams.get('token');
+
+            if (action === 'register' && token && pendingInvites[token]) {
+                const invite = pendingInvites[token];
+                showPasswordSetupScreen(token, invite.email, invite.role);
+            }
+        }
+
+        function showPasswordSetupScreen(token, email, role) {
+            const loginBox = document.querySelector('.login-box');
+            if (!loginBox) return;
+
+            loginBox.innerHTML = `
+                <h3>Complete Registration</h3>
+                <p>Setting up account for <strong>${email}</strong> (${role})</p>
+                <div class="input-group">
+                    <label>New Password</label>
+                    <input type="password" id="new-password" placeholder="Enter new password">
+                </div>
+                <div class="input-group">
+                    <label>Confirm Password</label>
+                    <input type="password" id="confirm-password" placeholder="Confirm new password">
+                </div>
+                <button class="btn-login" onclick="completePasswordSetup('${token}')">Save Password & Login</button>
+                <div id="setup-error" style="color:var(--accent-red); font-size:0.8rem; margin-top:0.8rem; display:none;"></div>
+            `;
+        }
+
+        function completePasswordSetup(token) {
+            const newPass = document.getElementById('new-password').value;
+            const confirmPass = document.getElementById('confirm-password').value;
+            const errorDiv = document.getElementById('setup-error');
+
+            if (!newPass || newPass.length < 6) {
+                errorDiv.innerText = "Password must be at least 6 characters long.";
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            if (newPass !== confirmPass) {
+                errorDiv.innerText = "Passwords do not match.";
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            const invite = pendingInvites[token];
+            
+            userDatabase.push({
+                email: invite.email,
+                password: newPass,
+                role: invite.role,
+                group: invite.group,
+                status: 'Active'
+            });
+
+            delete pendingInvites[token];
+            saveStateToStorage();
+
+            alert(`Account for ${invite.email} activated successfully! You may now log in with your new password.`);
+            window.location.href = window.location.href.split('?')[0];
+        }
+
+        function authenticateUser(emailInput, passwordInput) {
+            const user = userDatabase.find(u => (u.email === emailInput || emailInput === 'admin') && u.password === passwordInput);
+            
+            if (user) {
+                currentUserRole = user.role;
+                return { success: true, user: user };
+            } else {
+                return { success: false, message: "Invalid credentials." };
+            }
+        }
+
+        // HIGH-PRECISION 10-POINT GEOFENCE COVERING ALL OF ZIMBABWE
+        const PARK_BOUNDARY = [
+            [-15.6180, 30.3950], // Kanyemba (Northernmost Tip / Zambezi)
+            [-15.6000, 32.9000], // Nyamapanda / Northeast Border
+            [-18.9700, 32.6700], // Mutare / Eastern Highlands
+            [-21.3000, 32.4000], // Chiredzi / Chipinge South
+            [-22.4200, 31.3000], // Beitbridge / Limpopo River (Southernmost Boundary)
+            [-22.2000, 29.8000], // Shashe River / Tuli Junction
+            [-20.4800, 27.8000], // Plumtree / Botswana Border
+            [-17.8000, 25.2000], // Kazungula / Victoria Falls (Westernmost Tip)
+            [-16.5200, 28.8000], // Lake Kariba / Zambezi River Segment
+            [-15.7200, 29.3600]  // Mana Pools / Zambezi Perimeter
+        ];
+
+        let RESTRICTED_ZONE = [
+            [-15.6500, 29.3200],
+            [-15.6500, 29.4800],
+            [-15.6900, 29.4800],
+            [-15.6900, 29.3200]
+        ];
+
+        let provisionedTags = [
+            { devEui: '24E124128D300101', category: 'Milesight', model: 'Milesight GS301 Badge', assigned: true },
+            { devEui: '24E124128D300102', category: 'Milesight', model: 'Milesight TS201 Tracker', assigned: true },
+            { devEui: '24E124128D300103', category: 'Milesight', model: 'Milesight GS301 Badge', assigned: false },
+            { devEui: 'KIT-SL-MANA-01', category: 'Starlink', model: 'Starlink Standard (Gen 3)', assigned: true },
+            { devEui: 'KIT-SL-ZAMBEZI-02', category: 'Starlink', model: 'Starlink Mini Terminal', assigned: false }
+        ];
+
+        let activeVisitors = [
+            { id: '24E124128D300101', type: 'Milesight GS301 Badge', name: 'Nyasha Moyo', lat: -15.7400, lng: 29.3500, status: 'Normal', inRestricted: false, insidePark: true, marker: null },
+            { id: '24E124128D300102', type: 'Milesight TS201 Tracker', name: 'Mana Safari Unit 1', lat: -15.7500, lng: 29.3800, status: 'Normal', inRestricted: false, insidePark: true, marker: null }
+        ];
+
+        let systemAlarms = [];
+        let poachingSeveritySetting = 'Critical';
+        let boundarySeveritySetting = 'Major';
+
+        function handleLogin() {
+            const userVal = document.getElementById('username').value.trim();
+            const passVal = document.getElementById('password').value.trim();
+            const authResult = authenticateUser(userVal, passVal);
+
+            if(authResult.success) {
+                document.getElementById('login-screen').style.display = 'none';
+                applyRolePermissions();
+                setTimeout(() => { initMap(); }, 100);
+            } else {
+                document.getElementById('error-msg').style.display = 'block';
+            }
+        }
+
+        function applyRolePermissions() {
+            document.getElementById('header-user-role').innerText = currentUserRole.toUpperCase();
+            if(currentUserRole === 'Viewer') {
+                document.getElementById('tab-geofence').style.display = 'none';
+                document.getElementById('tab-users').style.display = 'none';
+                document.getElementById('btn-add-tag').style.display = 'none';
+            } else if(currentUserRole === 'Operator') {
+                document.getElementById('tab-geofence').style.display = 'none';
+            }
+        }
+
+        function switchView(viewId, btn) {
+            document.querySelectorAll('.view-panel').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(viewId).classList.add('active');
+            btn.classList.add('active');
+
+            if(viewId === 'map-view' && map) {
+                setTimeout(() => { map.invalidateSize(); }, 150);
+            }
+        }
+
+        function openCheckInModal() { 
+            updateModalProvisionedDropdown();
+            document.getElementById('modal-overlay').style.display = 'flex'; 
+        }
+        function closeCheckInModal() { document.getElementById('modal-overlay').style.display = 'none'; }
+
+        function initMap() {
+            if (map !== null) return;
+
+            map = L.map('map', { zoomControl: true, attributionControl: false }).setView([-19.0154, 29.1548], 6);
+
+            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', {
+                maxZoom: 18,
+                attribution: 'Tiles &copy; Esri'
+            }).addTo(map);
+
+            L.polygon(PARK_BOUNDARY, { color: '#10b981', fillColor: '#10b981', fillOpacity: 0.05, weight: 2, dashArray: '4, 8' }).addTo(map)
+                .bindPopup("<b>NATIONAL ZIMBABWE GEOFENCE PERIMETER</b>");
+
+            restrictedPolygonLayer = L.polygon(RESTRICTED_ZONE, { color: '#ef4444', fillColor: '#ef4444', fillOpacity: 0.25, weight: 2, dashArray: '6, 6' }).addTo(map)
+                .bindPopup("<b>RESTRICTED POACHING / ZAMBEZI RIVER ZONE</b>");
+
+            L.circleMarker(MAIN_GATE, { color: '#3b82f6', fillColor: '#3b82f6', fillOpacity: 1, radius: 8 }).addTo(map)
+                .bindPopup("<b>NYAMEPI MAIN GATE</b>");
+
+            syncCoordsToInput();
+            activeVisitors.forEach(v => renderVisitorOnMap(v));
+            updateVisitorUI();
+            updateInventoryUI();
+            updateUsersTableUI();
+            updateAlarmsDashboardUI();
+
+            setInterval(simulateMovementAndGeofenceCheck, 2500);
+            logTelemetry('System', 'TÉLEIOS Engineering - National Zimbabwe Command Mesh Activated', 'normal');
+        }
+
+        function toggleProvisioningCategory(category) {
+            const modelSelect = document.getElementById('prov-model');
+            if (category === 'Starlink') {
+                modelSelect.innerHTML = `
+                    <option value="Starlink Standard (Gen 3)">Starlink Standard (Gen 3)</option>
+                    <option value="Starlink Mini Terminal">Starlink Mini Terminal</option>
+                    <option value="Starlink Flat High Performance">Starlink Flat High Performance</option>
+                `;
+            } else {
+                modelSelect.innerHTML = `
+                    <option value="Milesight GS301 Badge">Milesight GS301 Smart Badge</option>
+                    <option value="Milesight TS201 Tracker">Milesight TS201 Vehicle Tracker</option>
+                    <option value="Milesight AT101 Tag">Milesight AT101 Asset Tag</option>
+                `;
+            }
+        }
+
+        function provisionMilesightTag() {
+            const category = document.getElementById('prov-category').value;
+            const devEui = document.getElementById('prov-dev-eui').value.trim();
+            const model = document.getElementById('prov-model').value;
+
+            if (!devEui) { alert('Please enter DevEUI / KIT-ID'); return; }
+
+            provisionedTags.push({ devEui: devEui, category: category, model: model, assigned: false });
+            updateInventoryUI();
+            logTelemetry('PROVISIONING', `Registered ${category} Hardware ID: ${devEui} (${model})`, 'normal');
+
+            meshSyncChannel.postMessage({ type: 'INVENTORY_UPDATED', inventory: provisionedTags });
+
+            document.getElementById('prov-dev-eui').value = '';
+            document.getElementById('prov-app-key').value = '';
+            alert(`${category} hardware ${devEui} added to system inventory!`);
+        }
+
+        function updateInventoryUI() {
+            const body = document.getElementById('inventory-table-body');
+            if(!body) return;
+            body.innerHTML = '';
+
+            let onlineStarlinks = 0;
+
+            provisionedTags.forEach(t => {
+                if(t.category === 'Starlink') onlineStarlinks++;
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${t.devEui}</td>
+                    <td><strong>[${t.category || 'Milesight'}]</strong> ${t.model}</td>
+                    <td><span style="color:${t.assigned ? 'var(--accent-orange)' : 'var(--accent-green)'}">${t.assigned ? (t.category === 'Starlink' ? 'ONLINE / ACTIVE' : 'ASSIGNED') : 'UNASSIGNED / READY'}</span></td>
+                `;
+                body.appendChild(tr);
+            });
+
+            document.getElementById('starlink-active-count').innerText = `${onlineStarlinks} ONLINE`;
+        }
+
+        function generateInviteLinkUI() {
+            const email = document.getElementById('onboard-email').value.trim();
+            const role = document.getElementById('onboard-role').value;
+            const group = document.getElementById('onboard-group').value;
+
+            if (!email) { alert('Please enter an email.'); return; }
+
+            const inviteUrl = onboardNewUser(email, role, group);
+            document.getElementById('generated-invite-url').value = inviteUrl;
+            document.getElementById('invite-result-box').style.display = 'block';
+            updateUsersTableUI();
+        }
+
+        function updateUsersTableUI() {
+            const tbody = document.getElementById('users-table-body');
+            if(!tbody) return;
+            tbody.innerHTML = '';
+
+            let activeCount = 0;
+            userDatabase.forEach(u => {
+                if(u.status === 'Active') activeCount++;
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${u.email}</td>
+                    <td><span class="badge badge-normal">${u.role}</span></td>
+                    <td>${u.group}</td>
+                    <td><span style="color:${u.status === 'Active' ? 'var(--accent-green)' : 'var(--accent-orange)'}">${u.status.toUpperCase()}</span></td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('total-users-count').innerText = userDatabase.length;
+            document.getElementById('active-users-count').innerText = activeCount;
+        }
+
+        function saveAlarmRules() {
+            poachingSeveritySetting = document.getElementById('rule-poaching-severity').value;
+            boundarySeveritySetting = document.getElementById('rule-boundary-severity').value;
+            logTelemetry('RULE CONFIG', `Poaching severity set to: ${poachingSeveritySetting}, Border severity set to: ${boundarySeveritySetting}`, 'normal');
+            alert('Alarm severity rules updated successfully!');
+        }
+
+        function addAlarmEvent(source, severity, description, shouldBroadcast = true) {
+            systemAlarms.unshift({ time: new Date().toLocaleTimeString(), source: source, severity: severity, text: description });
+            updateAlarmsDashboardUI();
+
+            if (shouldBroadcast) {
+                meshSyncChannel.postMessage({
+                    type: 'ALARM_TRIGGERED',
+                    source: source,
+                    severity: severity,
+                    text: description
+                });
+            }
+        }
+
+        function updateAlarmsDashboardUI() {
+            const criticalList = document.getElementById('critical-alarms-list');
+            const majorList = document.getElementById('major-alarms-list');
+            const minorList = document.getElementById('minor-alarms-list');
+            const normalList = document.getElementById('normal-alarms-list');
+
+            if(!criticalList) return;
+
+            criticalList.innerHTML = ''; majorList.innerHTML = ''; minorList.innerHTML = ''; normalList.innerHTML = '';
+            let critCount = 0, majCount = 0, minCount = 0, normCount = 0;
+
+            systemAlarms.forEach(a => {
+                const item = document.createElement('div');
+                item.style.padding = '0.5rem 0';
+                item.style.borderBottom = '1px solid var(--border-color)';
+                item.innerHTML = `<strong>[${a.time}] ${a.source}:</strong> ${a.text}`;
+
+                if(a.severity === 'Critical') { criticalList.appendChild(item); critCount++; }
+                else if(a.severity === 'Major') { majorList.appendChild(item); majCount++; }
+                else if(a.severity === 'Minor') { minorList.appendChild(item); minCount++; }
+                else { normalList.appendChild(item); normCount++; }
+            });
+
+            document.getElementById('critical-count').innerText = critCount;
+            document.getElementById('major-count').innerText = majCount;
+            document.getElementById('minor-count').innerText = minCount;
+            document.getElementById('normal-count').innerText = normCount;
+        }
+
+        function syncCoordsToInput() {
+            document.getElementById('geofence-coords-input').value = JSON.stringify(RESTRICTED_ZONE);
+        }
+
+        function updateGeofenceFromInput() {
+            try {
+                const parsed = JSON.parse(document.getElementById('geofence-coords-input').value);
+                if (Array.isArray(parsed) && parsed.length >= 3) {
+                    RESTRICTED_ZONE = parsed;
+                    if(restrictedPolygonLayer) map.removeLayer(restrictedPolygonLayer);
+                    restrictedPolygonLayer = L.polygon(RESTRICTED_ZONE, { color: '#ef4444', fillColor: '#ef4444', fillOpacity: 0.25, weight: 2 }).addTo(map);
+                    
+                    meshSyncChannel.postMessage({ type: 'GEOFENCE_UPDATED', zone: RESTRICTED_ZONE });
+
+                    logTelemetry('GEOFENCE PARAMETER', 'Geofence coordinates updated via Parameter Editor', 'normal');
+                    alert('Geofence Parameters updated successfully!');
+                } else {
+                    alert('Invalid coordinate format. Provide an array of at least 3 [lat, lng] pairs.');
+                }
+            } catch (e) {
+                alert('JSON Parse Error in coordinates input.');
+            }
+        }
+
+        function updateModalProvisionedDropdown() {
+            const dropdown = document.getElementById('modal-provisioned-select');
+            if(!dropdown) return;
+            dropdown.innerHTML = '';
+            const unassigned = provisionedTags.filter(t => !t.assigned);
+            if(unassigned.length === 0) {
+                dropdown.innerHTML = '<option value="">No Unassigned Hardware Tags Available</option>';
+                return;
+            }
+            unassigned.forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t.devEui;
+                opt.innerText = `[${t.category || 'Milesight'}] ${t.devEui} (${t.model})`;
+                dropdown.appendChild(opt);
+            });
+        }
+
+        function isPointInPolygon(point, polygon) {
+            let x = point[0], y = point[1];
+            let inside = false;
+            for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+                let xi = polygon[i][0], yi = polygon[i][1];
+                let xj = polygon[j][0], yj = polygon[j][1];
+
+                let intersect = ((yi > y) !== (yj > y)) &&
+                    (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+                if (intersect) inside = !inside;
+            }
+            return inside;
+        }
+
+        function renderVisitorOnMap(visitor) {
+            if (!map) return;
+            const color = visitor.isMyLocation ? '#8b5cf6' : (visitor.inRestricted ? '#ef4444' : (!visitor.insidePark ? '#f59e0b' : '#10b981'));
+            
+            if (!visitor.marker) {
+                const marker = L.circleMarker([visitor.lat, visitor.lng], {
+                    color: color, fillColor: color, fillOpacity: 0.9, radius: visitor.isMyLocation ? 10 : 7
+                }).addTo(map);
+
+                marker.bindPopup(`<b>${visitor.name} (${visitor.id})</b><br>Type: ${visitor.type}<br>Status: ${visitor.status}`);
+                visitor.marker = marker;
+            } else {
+                visitor.marker.setLatLng([visitor.lat, visitor.lng]);
+                visitor.marker.setStyle({ color: color, fillColor: color });
+            }
+        }
+
+        function simulateMovementAndGeofenceCheck() {
+            activeVisitors.forEach(v => {
+                if(!v.isMyLocation) {
+                    v.lat += (Math.random() - 0.5) * 0.002;
+                    v.lng += (Math.random() - 0.5) * 0.002;
+                    if (v.marker) v.marker.setLatLng([v.lat, v.lng]);
+                }
+
+                const currentPos = [v.lat, v.lng];
+                const insideRestricted = isPointInPolygon(currentPos, RESTRICTED_ZONE);
+                const insidePark = isPointInPolygon(currentPos, PARK_BOUNDARY);
+
+                if (insideRestricted && !v.inRestricted) {
+                    v.inRestricted = true;
+                    v.status = 'RESTRICTED BREACH';
+                    if (v.marker) v.marker.setStyle({ color: '#ef4444', fillColor: '#ef4444' });
+                    
+                    const alertMsg = `${v.name} (${v.id}) entered Restricted Zone! Position: [${v.lat.toFixed(4)}, ${v.lng.toFixed(4)}]`;
+                    logTelemetry('GEOFENCE BREACH', alertMsg, 'alert');
+                    addAlarmEvent(v.id, poachingSeveritySetting, alertMsg);
+
+                    dispatchGeofenceAlertEmails(poachingSeveritySetting, v.id, alertMsg);
+                } else if (!insideRestricted && v.inRestricted) {
+                    v.inRestricted = false;
+                    v.status = 'Normal';
+                    if (v.marker) v.marker.setStyle({ color: v.isMyLocation ? '#8b5cf6' : '#10b981', fillColor: v.isMyLocation ? '#8b5cf6' : '#10b981' });
+                    logTelemetry('GEOFENCE CLEAR', `${v.name} (${v.id}) exited Restricted Zone.`, 'normal');
+                    addAlarmEvent(v.id, 'Normal', `${v.name} returned to clear zone.`);
+                }
+
+                if (!insidePark && v.insidePark) {
+                    v.insidePark = false;
+                    v.status = 'OUTSIDE ZIMBABWE BORDER';
+                    if (v.marker) v.marker.setStyle({ color: '#f59e0b', fillColor: '#f59e0b' });
+                    
+                    const warningMsg = `${v.name} (${v.id}) crossed outside National Zimbabwe Border! Position: [${v.lat.toFixed(4)}, ${v.lng.toFixed(4)}]`;
+                    logTelemetry('BORDER EXIT', warningMsg, 'warning');
+                    addAlarmEvent(v.id, boundarySeveritySetting, warningMsg);
+
+                    dispatchGeofenceAlertEmails(boundarySeveritySetting, v.id, warningMsg);
+                } else if (insidePark && !v.insidePark) {
+                    v.insidePark = true;
+                    v.status = 'Normal';
+                    if (v.marker) v.marker.setStyle({ color: v.isMyLocation ? '#8b5cf6' : '#10b981', fillColor: v.isMyLocation ? '#8b5cf6' : '#10b981' });
+                }
+            });
+
+            updateVisitorUI();
+            broadcastStateUpdate();
+        }
+
+        function simulateBackgroundEmail(subject, body, recipientList) {
+            const popup = document.getElementById('email-popup');
+            document.getElementById('email-popup-recipients').innerText = recipientList || 'parks@tactical-mesh.com';
+            document.getElementById('email-subject').innerHTML = `<strong>Subject:</strong> ${subject}`;
+            document.getElementById('email-body').innerText = body;
+            document.getElementById('email-time').innerText = new Date().toLocaleTimeString();
+
+            popup.style.display = 'block';
+            logTelemetry('SMTP DISPATCH', `Email dispatch sent to [${recipientList}]: "${subject}"`, 'email');
+
+            setTimeout(() => { popup.style.display = 'none'; }, 5000);
+        }
+
+        function simulateMyLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(() => {
+                    const myLat = -17.8216;
+                    const myLng = 31.0492;
+
+                    const existingIndex = activeVisitors.findIndex(v => v.id === 'MY-GPS');
+                    if(existingIndex !== -1) {
+                        if (activeVisitors[existingIndex].marker) map.removeLayer(activeVisitors[existingIndex].marker);
+                        activeVisitors.splice(existingIndex, 1);
+                    }
+
+                    const myUser = {
+                        id: 'MY-GPS', type: 'Live Phone GPS', name: 'My Current Location (Harare HQ)',
+                        lat: myLat, lng: myLng, status: 'Active (Simulated Zim GPS)',
+                        inRestricted: false, insidePark: true, isMyLocation: true, marker: null
+                    };
+
+                    activeVisitors.push(myUser);
+                    renderVisitorOnMap(myUser);
+                    updateVisitorUI();
+                    broadcastStateUpdate();
+                    if (map) map.setView([myLat, myLng], 12);
+                    logTelemetry('GPS FIXED', 'Placed Live Location in Harare, Zimbabwe', 'checkout');
+                }, () => {
+                    alert('Could not acquire browser position. Placing default GPS coordinate.');
+                });
+            }
+        }
+
+        function getSelectedAsset() {
+            const selectDropdown = document.getElementById('target-asset-select');
+            if (!selectDropdown) return null;
+            const selectedId = selectDropdown.value;
+            return activeVisitors.find(v => v.id === selectedId);
+        }
+
+        function forceBreachRestrictedZone() {
+            const target = getSelectedAsset();
+            if (!target) { alert('No active asset selected.'); return; }
+            target.lat = -15.6700;
+            target.lng = 29.4000;
+            if (target.marker) target.marker.setLatLng([target.lat, target.lng]);
+            if (map) map.panTo([target.lat, target.lng]);
+            
+            broadcastStateUpdate();
+            
+            switchView('map-view', document.querySelectorAll('.tab-btn')[0]);
+        }
+
+        function forceExitParkBoundary() {
+            const target = getSelectedAsset();
+            if (!target) { alert('No active asset selected.'); return; }
+            target.lat = -23.1000;
+            target.lng = 31.5000;
+            if (target.marker) target.marker.setLatLng([target.lat, target.lng]);
+            if (map) map.panTo([target.lat, target.lng]);
+            
+            broadcastStateUpdate();
+            
+            switchView('map-view', document.querySelectorAll('.tab-btn')[0]);
+        }
+
+        function checkInTagFromModal() {
+            const nameInput = document.getElementById('modal-visitor-name');
+            const devEuiSelect = document.getElementById('modal-provisioned-select');
+
+            const name = nameInput ? nameInput.value.trim() : '';
+            const devEui = devEuiSelect ? devEuiSelect.value : '';
+
+            if (!name || !devEui) { alert('Please enter a name and select a provisioned device.'); return; }
+
+            const provItem = provisionedTags.find(t => t.devEui === devEui);
+            if(provItem) provItem.assigned = true;
+
+            const visitor = {
+                id: devEui, type: provItem ? provItem.model : 'Hardware Asset', name: name,
+                lat: MAIN_GATE[0] - 0.003, lng: MAIN_GATE[1] + 0.003,
+                status: 'Normal', inRestricted: false, insidePark: true, isMyLocation: false, marker: null
+            };
+
+            activeVisitors.push(visitor);
+            renderVisitorOnMap(visitor);
+            updateVisitorUI();
+            updateInventoryUI();
+            broadcastStateUpdate();
+            
+            logTelemetry('GATE ENTRY', `Assigned ${visitor.type} (${devEui}) to ${name}.`, 'checkout');
+
+            if (nameInput) nameInput.value = '';
+            closeCheckInModal();
+        }
+
+        function checkOutTag(tagId) {
+            const index = activeVisitors.findIndex(v => v.id === tagId);
+            if (index !== -1) {
+                const visitor = activeVisitors[index];
+                if (visitor.marker) map.removeLayer(visitor.marker);
+
+                const provItem = provisionedTags.find(t => t.devEui === tagId);
+                if(provItem) provItem.assigned = false;
+
+                logTelemetry('GATE EXIT', `Checked-OUT ${visitor.name} (${visitor.id}). Device returned to inventory.`, 'checkout');
+                activeVisitors.splice(index, 1);
+                updateVisitorUI();
+                updateInventoryUI();
+                broadcastStateUpdate();
+            }
+        }
+
+        function logTelemetry(source, message, type) {
+            const time = new Date().toLocaleTimeString();
+            const tableBody = document.getElementById('logs-table-body');
+            if (!tableBody) return;
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${time}</td>
+                <td>${source}</td>
+                <td><span style="color:${type === 'alert' ? 'var(--accent-red)' : (type === 'warning' ? 'var(--accent-orange)' : 'var(--accent-green)')}">${type.toUpperCase()}</span></td>
+                <td>${message}</td>
+            `;
+            tableBody.prepend(row);
+        }
+
+        function exportMaintenanceReport() {
+            const rows = document.querySelectorAll('#logs-table-body tr');
+            let content = "TELEIOS ENGINEERING PVT LTD - MAINTENANCE & AUDIT REPORT\n";
+            content += "Generated: " + new Date().toLocaleString() + "\n";
+            content += "===========================================================\n\n";
+
+            rows.forEach(r => {
+                const cols = r.querySelectorAll('td');
+                if(cols.length >= 4) {
+                    content += `[${cols[0].innerText}] ${cols[1].innerText} | ${cols[2].innerText}: ${cols[3].innerText}\n`;
+                }
+            });
+
+            const blob = new Blob([content], { type: 'text/plain' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `Teleios_Maintenance_Report_${Date.now()}.txt`;
+            link.click();
+        }
+
+        function updateVisitorUI() {
+            const activeCountEl = document.getElementById('active-count');
+            if (activeCountEl) activeCountEl.innerText = activeVisitors.length;
+
+            const list = document.getElementById('asset-list');
+            if (list) {
+                list.innerHTML = '';
+                activeVisitors.forEach(v => {
+                    const item = document.createElement('div');
+                    item.className = 'asset-card';
+                    const statusColor = v.isMyLocation ? 'var(--accent-purple)' : (v.inRestricted ? 'var(--accent-red)' : (v.insidePark ? 'var(--accent-green)' : 'var(--accent-orange)'));
+                    item.innerHTML = `
+                        <div class="asset-info">
+                            <strong>${v.name} (${v.id.substring(0, 10)}...)</strong>
+                            <span style="color:${statusColor}">${v.status}</span>
+                        </div>
+                        <button class="btn-checkout" onclick="checkOutTag('${v.id}')">Exit</button>
+                    `;
+                    list.appendChild(item);
+                });
+            }
+
+            const selectDropdown = document.getElementById('target-asset-select');
+            if (selectDropdown) {
+                const currentSelected = selectDropdown.value;
+                selectDropdown.innerHTML = '';
+                activeVisitors.forEach(v => {
+                    const option = document.createElement('option');
+                    option.value = v.id;
+                    option.innerText = `${v.name} (${v.id})`;
+                    if (v.id === currentSelected) option.selected = true;
+                    selectDropdown.appendChild(option);
+                });
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            checkUrlForInviteToken();
+        });
+    </script>
+</body>
+</html>
